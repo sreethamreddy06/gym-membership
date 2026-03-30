@@ -42,7 +42,7 @@ function App() {
       setMembers(data);
     } catch (err) {
       const errorMsg = err.message.includes("Failed to fetch") 
-        ? "Backend server is not running. Please start the backend server on port 9090."
+        ? `Backend server at ${API_BASE} is unreachable. Check CORS or server status.`
         : err.message || "Something went wrong";
       setError(errorMsg);
     } finally {
@@ -93,7 +93,7 @@ function App() {
       clearForm();
     } catch (err) {
       const errorMsg = err.message.includes("Failed to fetch") 
-        ? "Backend server is not running. Please start the backend server on port 9090."
+        ? `Backend server at ${API_BASE} is unreachable. Check CORS or server status.`
         : err.message || "Something went wrong";
       setError(errorMsg);
     } finally {
@@ -123,7 +123,7 @@ function App() {
       clearForm();
     } catch (err) {
       const errorMsg = err.message.includes("Failed to fetch") 
-        ? "Backend server is not running. Please start the backend server on port 9090."
+        ? `Backend server at ${API_BASE} is unreachable. Check CORS or server status.`
         : err.message || "Something went wrong";
       setError(errorMsg);
     } finally {
@@ -148,7 +148,7 @@ function App() {
       await getMembers();
     } catch (err) {
       const errorMsg = err.message.includes("Failed to fetch") 
-        ? "Backend server is not running. Please start the backend server on port 9090."
+        ? `Backend server at ${API_BASE} is unreachable. Check CORS or server status.`
         : err.message || "Something went wrong";
       setError(errorMsg);
     } finally {
