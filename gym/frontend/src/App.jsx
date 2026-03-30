@@ -3,9 +3,8 @@ import "./App.css";
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:9090";
 
-// Retry logic with exponential backoff
 async function fetchWithRetry(url, options = {}, retries = 3) {
-  for (let i = 0; i < retries; i++) {
+  for (let i = 0; i < retries; i += 1) {
     try {
       const res = await fetch(url, options);
       return res;
@@ -24,13 +23,10 @@ function App() {
   const [plan, setPlan] = useState("");
   const [trainer, setTrainer] = useState("");
   const [editId, setEditId] = useState(null);
-
   const [searchTerm, setSearchTerm] = useState("");
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // GET /members
   const getMembers = useCallback(async () => {
     const url = `${API_BASE}/members`;
     try {
@@ -41,7 +37,7 @@ function App() {
       const data = await res.json();
       setMembers(data);
     } catch (err) {
-      const errorMsg = err.message.includes("Failed to fetch") 
+      const errorMsg = err.message.includes("Failed to fetch")
         ? `Backend server at ${API_BASE} is unreachable. Check CORS or server status.`
         : err.message || "Something went wrong";
       setError(errorMsg);
@@ -71,7 +67,6 @@ function App() {
     return true;
   };
 
-  // POST /members/add
   const addMember = async () => {
     if (!validateForm()) return;
 
@@ -92,7 +87,7 @@ function App() {
       await getMembers();
       clearForm();
     } catch (err) {
-      const errorMsg = err.message.includes("Failed to fetch") 
+      const errorMsg = err.message.includes("Failed to fetch")
         ? `Backend server at ${API_BASE} is unreachable. Check CORS or server status.`
         : err.message || "Something went wrong";
       setError(errorMsg);
@@ -101,7 +96,6 @@ function App() {
     }
   };
 
-  // PUT /members/update
   const updateMember = async () => {
     if (!validateForm() || editId == null) return;
 
@@ -122,7 +116,7 @@ function App() {
       await getMembers();
       clearForm();
     } catch (err) {
-      const errorMsg = err.message.includes("Failed to fetch") 
+      const errorMsg = err.message.includes("Failed to fetch")
         ? `Backend server at ${API_BASE} is unreachable. Check CORS or server status.`
         : err.message || "Something went wrong";
       setError(errorMsg);
@@ -131,23 +125,20 @@ function App() {
     }
   };
 
-  // DELETE /members/delete/{id}
   const deleteMember = async (id) => {
     const url = `${API_BASE}/members/delete/${id}`;
 
     try {
       setLoading(true);
       setError("");
-
       const res = await fetchWithRetry(url, {
         method: "DELETE",
       });
       const text = await res.text();
       if (!res.ok) throw new Error(text || "Failed to delete member");
-
       await getMembers();
     } catch (err) {
-      const errorMsg = err.message.includes("Failed to fetch") 
+      const errorMsg = err.message.includes("Failed to fetch")
         ? `Backend server at ${API_BASE} is unreachable. Check CORS or server status.`
         : err.message || "Something went wrong";
       setError(errorMsg);
@@ -156,52 +147,80 @@ function App() {
     }
   };
 
-  const editMember = (m) => {
-    setEditId(m.id);
-    setName(m.name);
-    setEmail(m.email);
-    setMobile(m.mobile);
-    setPlan(m.plan);
-    setTrainer(m.trainer);
+  const editMember = (member) => {
+    setEditId(member.id);
+    setName(member.name);
+    setEmail(member.email);
+    setMobile(member.mobile);
+    setPlan(member.plan);
+    setTrainer(member.trainer);
     setError("");
   };
 
-  const filteredMembers = members.filter((m) => {
+  const filteredMembers = members.filter((member) => {
     if (!searchTerm.trim()) return true;
     const q = searchTerm.toLowerCase();
     return (
-      (m.name && m.name.toLowerCase().includes(q)) ||
-      (m.email && m.email.toLowerCase().includes(q)) ||
-      (m.mobile && m.mobile.toLowerCase().includes(q)) ||
-      (m.plan && m.plan.toLowerCase().includes(q)) ||
-      (m.trainer && m.trainer.toLowerCase().includes(q)) ||
-      (m.joinDate && new Date(m.joinDate).toLocaleDateString().toLowerCase().includes(q)) ||
-      (m.startDate && new Date(m.startDate).toLocaleDateString().toLowerCase().includes(q)) ||
-      (m.endDate && new Date(m.endDate).toLocaleDateString().toLowerCase().includes(q)) ||
-      (m.status && m.status.toLowerCase().includes(q))
+      (member.name && member.name.toLowerCase().includes(q)) ||
+      (member.email && member.email.toLowerCase().includes(q)) ||
+      (member.mobile && member.mobile.toLowerCase().includes(q)) ||
+      (member.plan && member.plan.toLowerCase().includes(q)) ||
+      (member.trainer && member.trainer.toLowerCase().includes(q)) ||
+      (member.joinDate &&
+        new Date(member.joinDate).toLocaleDateString().toLowerCase().includes(q)) ||
+      (member.startDate &&
+        new Date(member.startDate).toLocaleDateString().toLowerCase().includes(q)) ||
+      (member.endDate &&
+        new Date(member.endDate).toLocaleDateString().toLowerCase().includes(q)) ||
+      (member.status && member.status.toLowerCase().includes(q))
     );
   });
+
+  const activeMembers = members.filter((member) => member.status === "Active").length;
+  const expiringMembers = members.filter((member) => {
+    if (!member.endDate) return false;
+    const daysLeft = (new Date(member.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
+    return daysLeft >= 0 && daysLeft <= 7;
+  }).length;
+  const trainersCount = new Set(
+    members.map((member) => member.trainer?.trim()).filter(Boolean)
+  ).size;
 
   return (
     <div className="dashboard">
       <div className="dashboard-bg" aria-hidden="true" />
+      <div className="dashboard-grid" aria-hidden="true" />
 
       <header className="header">
-        <div className="brand">
-          <div className="brand-mark" aria-hidden="true">
-            <span />
+        <div className="hero-shell">
+          <div className="brand">
+            <div className="brand-mark" aria-hidden="true">
+              <span />
+            </div>
+            <div>
+              <p className="eyebrow">Gym Membership Hub</p>
+              <h1 className="title">Build a stronger member experience</h1>
+              <p className="subtitle">
+                Track sign-ups, manage plans, assign trainers, and keep your gym
+                membership desk moving with confidence.
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="eyebrow">Operations</p>
-            <h1 className="title">Gym Membership</h1>
-            <p className="subtitle">
-              Add members, assign plans, and keep records in sync with your API.
+
+          <div className="hero-banner">
+            <p className="hero-banner__label">Front desk status</p>
+            <p className="hero-banner__value">
+              {loading ? "Syncing member activity" : "Membership system online"}
+            </p>
+            <p className="hero-banner__meta">
+              API base: {API_BASE}
             </p>
           </div>
         </div>
+
         <div className="header-actions">
           <div className="stat-pill" title="Total members loaded">
-            <span className="stat-pill__label">Members</span>
+            <span className="stat-pill__label">Total members</span>
             <span className="stat-pill__value">{members.length}</span>
           </div>
           <button
@@ -214,6 +233,24 @@ function App() {
           </button>
         </div>
       </header>
+
+      <section className="summary-strip">
+        <article className="summary-card">
+          <p className="summary-card__label">Active members</p>
+          <p className="summary-card__value">{activeMembers}</p>
+          <p className="summary-card__meta">Members with a live plan right now</p>
+        </article>
+        <article className="summary-card">
+          <p className="summary-card__label">Renewals due</p>
+          <p className="summary-card__value">{expiringMembers}</p>
+          <p className="summary-card__meta">Plans ending in the next 7 days</p>
+        </article>
+        <article className="summary-card">
+          <p className="summary-card__label">Assigned coaches</p>
+          <p className="summary-card__value">{trainersCount}</p>
+          <p className="summary-card__meta">Unique trainers linked to members</p>
+        </article>
+      </section>
 
       {error && (
         <div className="error-banner" role="alert">
@@ -233,15 +270,15 @@ function App() {
       <main className="layout">
         <section className="card card-form">
           <div className="card-head">
-            <h2 className="card-title">
-              {editId ? "Edit member" : "New member"}
-            </h2>
+            <p className="card-kicker">New Membership</p>
+            <h2 className="card-title">{editId ? "Edit member" : "New member"}</h2>
             <p className="card-desc">
               {editId
-                ? "Update details and save to push changes to the server."
-                : "Fill in contact and plan details, then add to the roster."}
+                ? "Update member details and keep the gym roster accurate."
+                : "Capture member details, choose a plan, and add them to your gym roster."}
             </p>
           </div>
+
           <div className="form-grid">
             <label className="field">
               <span className="field-label">Name</span>
@@ -253,6 +290,7 @@ function App() {
                 onChange={(e) => setName(e.target.value)}
               />
             </label>
+
             <label className="field">
               <span className="field-label">Email</span>
               <input
@@ -263,6 +301,7 @@ function App() {
                 onChange={(e) => setEmail(e.target.value)}
               />
             </label>
+
             <label className="field">
               <span className="field-label">Mobile</span>
               <input
@@ -273,15 +312,17 @@ function App() {
                 onChange={(e) => setMobile(e.target.value)}
               />
             </label>
+
             <label className="field">
               <span className="field-label">Plan</span>
               <input
                 type="text"
-                placeholder="Monthly, yearly, trial…"
+                placeholder="Monthly, yearly, trial..."
                 value={plan}
                 onChange={(e) => setPlan(e.target.value)}
               />
             </label>
+
             <label className="field field-span">
               <span className="field-label">Trainer</span>
               <input
@@ -292,6 +333,7 @@ function App() {
               />
             </label>
           </div>
+
           <div className="form-actions">
             {editId ? (
               <>
@@ -328,24 +370,27 @@ function App() {
         <section className="card card-table">
           <div className="card-head card-head--row">
             <div>
-              <h2 className="card-title">Directory</h2>
+              <p className="card-kicker">Gym Roster</p>
+              <h2 className="card-title">Member directory</h2>
               <p className="card-desc">
                 {filteredMembers.length === members.length
-                  ? "All members in the current list."
-                  : `Showing ${filteredMembers.length} of ${members.length} after filter.`}
+                  ? "All registered gym members in the current roster."
+                  : `Showing ${filteredMembers.length} of ${members.length} members after filtering.`}
               </p>
             </div>
+
             <div className="search-row">
               <div className="search-wrap">
                 <span className="search-icon" aria-hidden="true" />
                 <input
                   type="search"
                   className="search-input"
-                  placeholder="Filter by name, email, plan, trainer, dates…"
+                  placeholder="Filter by name, email, plan, trainer, dates..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
+
               <button
                 type="button"
                 className="btn btn-ghost"
@@ -354,6 +399,7 @@ function App() {
               >
                 Reload
               </button>
+
               {searchTerm ? (
                 <button
                   type="button"
@@ -393,45 +439,43 @@ function App() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredMembers.map((m) => (
-                    <tr key={m.id}>
-                      <td className="mono">{m.id}</td>
-                      <td className="cell-strong">{m.name}</td>
-                      <td>{m.email}</td>
-                      <td className="mono">{m.mobile}</td>
-                      <td>{m.plan}</td>
-                      <td>{m.trainer}</td>
+                  {filteredMembers.map((member) => (
+                    <tr key={member.id}>
+                      <td className="mono">{member.id}</td>
+                      <td className="cell-strong">{member.name}</td>
+                      <td>{member.email}</td>
+                      <td className="mono">{member.mobile}</td>
+                      <td>{member.plan}</td>
+                      <td>{member.trainer}</td>
                       <td>
-                        {m.joinDate
-                          ? new Date(m.joinDate).toLocaleDateString()
-                          : "—"}
+                        {member.joinDate
+                          ? new Date(member.joinDate).toLocaleDateString()
+                          : "--"}
                       </td>
                       <td>
-                        {m.startDate
-                          ? new Date(m.startDate).toLocaleDateString()
-                          : "—"}
+                        {member.startDate
+                          ? new Date(member.startDate).toLocaleDateString()
+                          : "--"}
                       </td>
                       <td>
-                        {m.endDate
-                          ? new Date(m.endDate).toLocaleDateString()
-                          : "—"}
+                        {member.endDate
+                          ? new Date(member.endDate).toLocaleDateString()
+                          : "--"}
                       </td>
                       <td>
                         <span
                           className={
-                            m.status === "Active"
-                              ? "pill pill--ok"
-                              : "pill pill--bad"
+                            member.status === "Active" ? "pill pill--ok" : "pill pill--bad"
                           }
                         >
-                          {m.status}
+                          {member.status}
                         </span>
                       </td>
                       <td className="td-actions">
                         <button
                           type="button"
                           className="btn btn-sm btn-edit"
-                          onClick={() => editMember(m)}
+                          onClick={() => editMember(member)}
                           disabled={loading}
                         >
                           Edit
@@ -439,7 +483,7 @@ function App() {
                         <button
                           type="button"
                           className="btn btn-sm btn-delete"
-                          onClick={() => deleteMember(m.id)}
+                          onClick={() => deleteMember(member.id)}
                           disabled={loading}
                         >
                           Delete
