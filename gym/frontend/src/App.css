@@ -332,6 +332,11 @@
   align-items: start;
 }
 
+.left-rail {
+  display: grid;
+  gap: 1rem;
+}
+
 .card {
   border-radius: 28px;
   padding: 1.3rem;
@@ -413,13 +418,15 @@
 }
 
 .field input::placeholder,
-.search-input::placeholder {
+.search-input::placeholder,
+.assistant-composer textarea::placeholder {
   color: #698097;
 }
 
 .field input:focus,
 .field select:focus,
-.search-input:focus {
+.search-input:focus,
+.assistant-composer textarea:focus {
   border-color: rgba(255, 179, 0, 0.45);
   background: rgba(255, 255, 255, 0.055);
   box-shadow: 0 0 0 4px rgba(255, 179, 0, 0.08);
@@ -484,6 +491,80 @@
 
 .plan-note {
   margin: 0.8rem 0 0;
+}
+
+.assistant-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.9rem;
+}
+
+.suggestion-chip {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text);
+  padding: 0.45rem 0.8rem;
+  cursor: pointer;
+}
+
+.assistant-thread {
+  display: grid;
+  gap: 0.7rem;
+  max-height: 340px;
+  overflow-y: auto;
+  padding-right: 0.2rem;
+}
+
+.assistant-bubble {
+  border-radius: 18px;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.assistant-bubble--assistant {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.assistant-bubble--user {
+  background: rgba(255, 179, 0, 0.12);
+  border-color: rgba(255, 179, 0, 0.2);
+}
+
+.assistant-bubble__role {
+  display: inline-block;
+  margin-bottom: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #ffd36f;
+}
+
+.assistant-bubble p {
+  margin: 0;
+  color: var(--text);
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.assistant-composer {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.9rem;
+}
+
+.assistant-composer textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 96px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.035);
+  color: var(--text);
+  padding: 0.88rem 0.95rem;
+  outline: none;
 }
 
 .form-actions {
@@ -632,6 +713,12 @@ tbody tr:hover td {
     var(--panel);
 }
 
+.card-assistant {
+  background:
+    linear-gradient(180deg, rgba(27, 13, 17, 0.82), rgba(8, 19, 29, 0.76)),
+    var(--panel);
+}
+
 .empty-state {
   padding: 3.2rem 1rem;
   text-align: center;
@@ -671,10 +758,7 @@ tbody tr:hover td {
     justify-content: space-between;
   }
 
-  .form-grid {
-    grid-template-columns: 1fr;
-  }
-
+  .form-grid,
   .plan-strip {
     grid-template-columns: 1fr;
   }

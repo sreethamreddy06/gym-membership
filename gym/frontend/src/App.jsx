@@ -6,6 +6,11 @@ const MEMBERSHIP_PLANS = [
   { id: "monthly", name: "Monthly", price: 5000, caption: "30-day access" },
   { id: "yearly", name: "Yearly", price: 15000, caption: "Best long-term value" },
 ];
+const AI_SUGGESTIONS = [
+  "Which members are expiring soon?",
+  "Suggest the best plan for a beginner.",
+  "How should I pitch yearly membership?",
+];
 
 async function fetchWithRetry(url, options = {}, retries = 3) {
   for (let i = 0; i < retries; i += 1) {
@@ -30,6 +35,14 @@ function App() {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [assistantInput, setAssistantInput] = useState("");
+  const [assistantLoading, setAssistantLoading] = useState(false);
+  const [assistantMessages, setAssistantMessages] = useState([
+    {
+      role: "assistant",
+      text: "Ask me about memberships, renewals, pricing, or trainer assignments.",
+    },
+  ]);
 
   const getMembers = useCallback(async () => {
     const url = `${API_BASE}/members`;
@@ -192,6 +205,43 @@ function App() {
   const selectedPlanDetails =
     MEMBERSHIP_PLANS.find((membershipPlan) => membershipPlan.name === plan) ?? null;
 
+  const askAssistant = async (message) => {
+    if (!message.trim()) return;
+
+    const userMessage = { role: "user", text: message.trim() };
+    setAssistantMessages((current) => [...current, userMessage]);
+    setAssistantInput("");
+    setAssistantLoading(true);
+
+    try {
+      const res = await fetch(`${API_BASE}/assistant/ask`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: message.trim() }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.message || data.error || "Failed to reach the AI assistant");
+      }
+
+      setAssistantMessages((current) => [
+        ...current,
+        { role: "assistant", text: data.reply || "I could not generate a response." },
+      ]);
+    } catch (err) {
+      setAssistantMessages((current) => [
+        ...current,
+        {
+          role: "assistant",
+          text: err.message || "The assistant is unavailable right now.",
+        },
+      ]);
+    } finally {
+      setAssistantLoading(false);
+    }
+  };
+
   return (
     <div className="dashboard">
       <div className="dashboard-bg" aria-hidden="true" />
@@ -274,6 +324,7 @@ function App() {
       )}
 
       <main className="layout">
+        <div className="left-rail">
         <section className="card card-form">
           <div className="card-head">
             <p className="card-kicker">New Membership</p>
@@ -401,6 +452,62 @@ function App() {
             )}
           </div>
         </section>
+
+        <section className="card card-assistant">
+          <div className="card-head">
+            <p className="card-kicker">AI Assistant</p>
+            <h2 className="card-title">Gym copilot</h2>
+            <p className="card-desc">
+              Ask for renewal insights, plan suggestions, or quick membership help.
+            </p>
+          </div>
+
+          <div className="assistant-suggestions">
+            {AI_SUGGESTIONS.map((suggestion) => (
+              <button
+                key={suggestion}
+                type="button"
+                className="suggestion-chip"
+                onClick={() => askAssistant(suggestion)}
+                disabled={assistantLoading}
+              >
+                {suggestion}
+              </button>
+            ))}
+          </div>
+
+          <div className="assistant-thread">
+            {assistantMessages.map((message, index) => (
+              <div
+                key={`${message.role}-${index}`}
+                className={`assistant-bubble assistant-bubble--${message.role}`}
+              >
+                <span className="assistant-bubble__role">
+                  {message.role === "assistant" ? "AI" : "You"}
+                </span>
+                <p>{message.text}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="assistant-composer">
+            <textarea
+              rows="4"
+              value={assistantInput}
+              onChange={(e) => setAssistantInput(e.target.value)}
+              placeholder="Ask about renewals, pricing, or member engagement..."
+            />
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => askAssistant(assistantInput)}
+              disabled={assistantLoading || !assistantInput.trim()}
+            >
+              {assistantLoading ? "Thinking..." : "Ask assistant"}
+            </button>
+          </div>
+        </section>
+        </div>
 
         <section className="card card-table">
           <div className="card-head card-head--row">
