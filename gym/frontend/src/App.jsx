@@ -2,6 +2,10 @@ import { useCallback, useEffect, useState } from "react";
 import "./App.css";
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:9090";
+const MEMBERSHIP_PLANS = [
+  { id: "monthly", name: "Monthly", price: 5000, caption: "30-day access" },
+  { id: "yearly", name: "Yearly", price: 15000, caption: "Best long-term value" },
+];
 
 async function fetchWithRetry(url, options = {}, retries = 3) {
   for (let i = 0; i < retries; i += 1) {
@@ -185,6 +189,8 @@ function App() {
   const trainersCount = new Set(
     members.map((member) => member.trainer?.trim()).filter(Boolean)
   ).size;
+  const selectedPlanDetails =
+    MEMBERSHIP_PLANS.find((membershipPlan) => membershipPlan.name === plan) ?? null;
 
   return (
     <div className="dashboard">
@@ -315,12 +321,17 @@ function App() {
 
             <label className="field">
               <span className="field-label">Plan</span>
-              <input
-                type="text"
-                placeholder="Monthly, yearly, trial..."
+              <select
                 value={plan}
                 onChange={(e) => setPlan(e.target.value)}
-              />
+              >
+                <option value="">Select membership plan</option>
+                {MEMBERSHIP_PLANS.map((membershipPlan) => (
+                  <option key={membershipPlan.id} value={membershipPlan.name}>
+                    {membershipPlan.name} - Rs. {membershipPlan.price}
+                  </option>
+                ))}
+              </select>
             </label>
 
             <label className="field field-span">
@@ -333,6 +344,30 @@ function App() {
               />
             </label>
           </div>
+
+          <div className="plan-strip">
+            {MEMBERSHIP_PLANS.map((membershipPlan) => (
+              <button
+                key={membershipPlan.id}
+                type="button"
+                className={`plan-card${
+                  plan === membershipPlan.name ? " plan-card--active" : ""
+                }`}
+                onClick={() => setPlan(membershipPlan.name)}
+              >
+                <span className="plan-card__name">{membershipPlan.name}</span>
+                <span className="plan-card__price">Rs. {membershipPlan.price}</span>
+                <span className="plan-card__caption">{membershipPlan.caption}</span>
+              </button>
+            ))}
+          </div>
+
+          {selectedPlanDetails ? (
+            <p className="plan-note">
+              Selected plan: <strong>{selectedPlanDetails.name}</strong> for
+              <strong> Rs. {selectedPlanDetails.price}</strong>.
+            </p>
+          ) : null}
 
           <div className="form-actions">
             {editId ? (
